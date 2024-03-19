@@ -5,6 +5,7 @@ namespace Shelf.Life.Database.Contexts;
 public class DatabaseContext : DbContext
 {
     public virtual DbSet<FoodDto> Foods { get; set; }
+    public virtual DbSet<StorageItemDto> StorageItems { get; set; }
     public string DbPath { get; }
     public DatabaseContext()
     {

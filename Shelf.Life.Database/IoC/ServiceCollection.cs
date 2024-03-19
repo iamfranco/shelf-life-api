@@ -11,6 +11,7 @@ public static class ServiceCollection
         services.ConfigureDatabases();
 
         services.AddTransient<IFoodStore, FoodStore>();
+        services.AddTransient<IStorageItemStore, StorageItemStore>();
 
         return services;
     }
