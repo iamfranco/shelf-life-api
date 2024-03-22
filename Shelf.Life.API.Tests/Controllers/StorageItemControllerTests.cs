@@ -1,8 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
-using Moq;
-using Moq.AutoMock;
+﻿using Microsoft.AspNetCore.Mvc;
 using Shelf.Life.API.Controllers;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Services;
@@ -31,7 +27,7 @@ public class StorageItemControllerTests
             .ReturnsAsync(storageItems);
 
         //When
-        var result = (OkObjectResult) await _subject.GetAll();
+        var result = (OkObjectResult)await _subject.GetAll();
 
         //Then
         result.StatusCode.Should().Be((int)HttpStatusCode.OK);

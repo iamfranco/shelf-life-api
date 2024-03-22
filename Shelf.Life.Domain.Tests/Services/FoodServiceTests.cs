@@ -1,8 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
-using Moq;
-using Moq.AutoMock;
-using Shelf.Life.Domain.Models;
+﻿using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Services;
 using Shelf.Life.Domain.Stores;
 

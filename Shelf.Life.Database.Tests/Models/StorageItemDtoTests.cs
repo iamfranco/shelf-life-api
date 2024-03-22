@@ -1,6 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
-using Shelf.Life.Database.Models;
+﻿using Shelf.Life.Database.Models;
 using Shelf.Life.Domain.Models;
 
 namespace Shelf.Life.Database.Tests.Models;
