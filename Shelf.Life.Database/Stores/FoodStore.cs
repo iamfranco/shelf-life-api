@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Shelf.Life.Database.Contexts;
+﻿using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Stores;

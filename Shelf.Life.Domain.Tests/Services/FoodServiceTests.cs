@@ -1,8 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
-using Moq;
-using Moq.AutoMock;
-using Shelf.Life.Domain.Models;
+﻿using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Services;
 using Shelf.Life.Domain.Stores;
 
@@ -68,7 +64,7 @@ public class FoodServiceTests
     }
 
     [Fact]
-    public async Task GivenHotel_WhenInsert_ThenInsertCalled()
+    public async Task GivenRequest_WhenInsert_ThenInsertCalled()
     {
         //Given
         var request = _fixture.Create<CreateFoodRequest>();
@@ -82,7 +78,7 @@ public class FoodServiceTests
     }
 
     [Fact]
-    public async Task GivenHotelWithMatchingNameExists_WhenInsert_ThenInsertNotCalled()
+    public async Task GivenFoodWithMatchingNameExists_WhenInsert_ThenInsertNotCalled()
     {
         //Given
         var request = _fixture.Create<CreateFoodRequest>();

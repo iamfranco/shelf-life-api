@@ -7,6 +7,7 @@ public static class ServiceCollection
     public static IServiceCollection AddDomainServices(this IServiceCollection services)
     {
         services.AddTransient<IFoodService, FoodService>();
+        services.AddTransient<IStorageItemService, StorageItemService>();
 
         return services;
     }

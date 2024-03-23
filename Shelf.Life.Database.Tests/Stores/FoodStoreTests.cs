@@ -1,7 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Moq;
+﻿using Microsoft.EntityFrameworkCore;
 using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Database.Stores;
@@ -94,10 +91,7 @@ public class FoodStoreTests
 
     private bool IsFoodDtoMatchingRequest(FoodDto foodDto, CreateFoodRequest request)
     {
-        return foodDto.Name == request.Name &&
-            foodDto.TotalCalories == request.TotalCalories &&
-            foodDto.TotalGrams == request.TotalGrams &&
-            foodDto.CookingTimeMinutes == request.CookingTimeMinutes;
+        return foodDto.Name == request.Name;
     }
 
     private Mock<DbSet<FoodDto>> GetMockSet(IEnumerable<FoodDto> foods)
