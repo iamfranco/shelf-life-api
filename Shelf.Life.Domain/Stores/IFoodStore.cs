@@ -3,7 +3,8 @@
 namespace Shelf.Life.Domain.Stores;
 public interface IFoodStore
 {
-    Task<Food?> FindByName(string name);
-    Task<IEnumerable<Food>> Get();
+    Food? FindByName(string name);
+    IEnumerable<Food> Get();
+    IEnumerable<Food> QueryByPartialName(string partialName);
     Task Insert(CreateFoodRequest request);
 }

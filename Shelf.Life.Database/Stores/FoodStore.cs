@@ -13,15 +13,22 @@ public class FoodStore : IFoodStore
         _context = context;
     }
 
-    public async Task<Food?> FindByName(string name)
+    public Food? FindByName(string name)
     {
         var matchingFoodDto = _context.Foods.FirstOrDefault(foodDto => foodDto.Name == name);
         return matchingFoodDto?.ToFood();
     }
 
-    public async Task<IEnumerable<Food>> Get()
+    public IEnumerable<Food> Get()
     {
         return _context.Foods.Select(foodDto => foodDto.ToFood());
+    }
+
+    public IEnumerable<Food> QueryByPartialName(string partialName)
+    {
+        return _context.Foods
+            .Where(foodDto => foodDto.Name.Contains(partialName))
+            .Select(foodDto => foodDto.ToFood());
     }
 
     public async Task Insert(CreateFoodRequest request)

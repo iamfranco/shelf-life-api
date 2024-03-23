@@ -20,7 +20,7 @@ public class FoodStoreTests
     }
 
     [Fact]
-    public async Task GivenMatchingFoodExist_WhenFindByName_ThenReturnMatchingFood()
+    public void GivenMatchingFoodExist_WhenFindByName_ThenReturnMatchingFood()
     {
         //Given
         var matchingFood = _fixture.Create<FoodDto>();
@@ -30,14 +30,14 @@ public class FoodStoreTests
         _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
 
         //When
-        var result = await _subject.FindByName(name);
+        var result = _subject.FindByName(name);
 
         //Then
         result.Should().BeEquivalentTo(matchingFood);
     }
 
     [Fact]
-    public async Task GivenNoMatchingFoodExist_WhenFindByName_ThenReturnNull()
+    public void GivenNoMatchingFoodExist_WhenFindByName_ThenReturnNull()
     {
         //Given
         var foods = _fixture.CreateMany<FoodDto>();
@@ -46,14 +46,14 @@ public class FoodStoreTests
         _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
 
         //When
-        var result = await _subject.FindByName(name);
+        var result = _subject.FindByName(name);
 
         //Then
         result.Should().BeNull();
     }
 
     [Fact]
-    public async Task GivenFoodsExist_WhenGet_ThenReturnAllFoods()
+    public void GivenFoodsExist_WhenGet_ThenReturnAllFoods()
     {
         //Given
         var foods = _fixture.CreateMany<FoodDto>();
@@ -61,10 +61,31 @@ public class FoodStoreTests
         _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
 
         //When
-        var result = await _subject.Get();
+        var result = _subject.Get();
 
         //Then
         result.Should().BeEquivalentTo(foods);
+    }
+
+    [Fact]
+    public void GivenMatchingFoodsExist_WhenQueryByPartialName_ThenReturnMatchingFoods()
+    {
+        //Given
+        var partialName = _fixture.Create<string>();
+
+        var matchingFoods = _fixture.Build<FoodDto>()
+            .With(x => x.Name, partialName + _fixture.Create<string>())
+            .CreateMany();
+
+        var foods = _fixture.CreateMany<FoodDto>().Concat(matchingFoods);
+
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        //When
+        var result = _subject.QueryByPartialName(partialName);
+
+        //Then
+        result.Should().BeEquivalentTo(matchingFoods);
     }
 
     [Fact]
