@@ -1,4 +1,5 @@
 ﻿using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
 
 namespace Shelf.Life.Domain.Services;

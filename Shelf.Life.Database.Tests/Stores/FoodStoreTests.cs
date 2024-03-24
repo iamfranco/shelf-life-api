@@ -2,7 +2,7 @@
 using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Database.Stores;
-using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 
 namespace Shelf.Life.Database.Tests.Stores;
 public class FoodStoreTests
@@ -53,6 +53,39 @@ public class FoodStoreTests
     }
 
     [Fact]
+    public void GivenMatchingFoodExists_WhenFindById_ThenReturnMatchingFood()
+    {
+        //Given
+        var matchingFood = _fixture.Create<FoodDto>();
+        var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
+        var id = matchingFood.Id;
+
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        //When
+        var result = _subject.FindById(id);
+
+        //Then
+        result.Should().BeEquivalentTo(matchingFood);
+    }
+
+    [Fact]
+    public void GivenNoNoMatchingFoodExists_WhenFindById_ThenReturnNull()
+    {
+        //Given
+        var foods = _fixture.CreateMany<FoodDto>();
+        var id = _fixture.Create<int>();
+
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        //When
+        var result = _subject.FindById(id);
+
+        //Then
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public void GivenFoodsExist_WhenGet_ThenReturnAllFoods()
     {
         //Given
@@ -73,9 +106,15 @@ public class FoodStoreTests
         //Given
         var partialName = _fixture.Create<string>();
 
-        var matchingFoods = _fixture.Build<FoodDto>()
+        var matchingFoodsSameCase = _fixture.Build<FoodDto>()
             .With(x => x.Name, partialName + _fixture.Create<string>())
             .CreateMany();
+
+        var matchingFoodsWrongCase = _fixture.Build<FoodDto>()
+            .With(x => x.Name, partialName.ToUpper() + _fixture.Create<string>())
+            .CreateMany();
+
+        var matchingFoods = matchingFoodsSameCase.Concat(matchingFoodsWrongCase);
 
         var foods = _fixture.CreateMany<FoodDto>().Concat(matchingFoods);
 
@@ -92,7 +131,7 @@ public class FoodStoreTests
     public async Task GivenFood_WhenInsert_ThenFoodInserted()
     {
         //Given
-        var request = _fixture.Create<CreateFoodRequest>();
+        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
 
         var foods = _fixture.CreateMany<FoodDto>();
 
@@ -110,7 +149,99 @@ public class FoodStoreTests
         _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }
 
-    private bool IsFoodDtoMatchingRequest(FoodDto foodDto, CreateFoodRequest request)
+    [Fact]
+    public async Task GivenUpdateRequest_WhenUpdate_ThenFoodUpdated()
+    {
+        //Given
+        var matchingFood = _fixture.Create<FoodDto>();
+        var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
+
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        var id = matchingFood.Id;
+        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
+
+        //When
+        await _subject.Update(id, request);
+
+        //Then
+        _mockContext.Verify(
+            x => x.Foods.Update(
+                It.Is<FoodDto>(foodDto => foodDto.Id == id && foodDto.Name == request.Name)
+            ),
+            Times.Once
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GivenNoMatchingFoodForId_WhenUpdate_ThenNoAction()
+    {
+        //Given
+        var foods = Enumerable.Empty<FoodDto>();
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        var id = _fixture.Create<int>();
+        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
+
+        //When
+        await _subject.Update(id, request);
+
+        //Then
+        _mockContext.Verify(
+            x => x.Foods.Update(It.IsAny<FoodDto>()),
+            Times.Never
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Never);
+    }
+
+    [Fact]
+    public async Task GivenId_WhenDelete_ThenFoodDeleted()
+    {
+        //Given
+        var matchingFood = _fixture.Create<FoodDto>();
+        var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
+
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        var id = matchingFood.Id;
+
+        //When
+        await _subject.Delete(id);
+
+        //Then
+        _mockContext.Verify(
+            x => x.Foods.Remove(matchingFood),
+            Times.Once
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GivenNoMatchingFoodForId_WhenDelete_ThenNoAction()
+    {
+        //Given
+        var id = _fixture.Create<int>();
+
+        var foods = Enumerable.Empty<FoodDto>();
+        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+
+        //When
+        await _subject.Delete(id);
+
+        //Then
+        _mockContext.Verify(
+            x => x.Foods.Remove(It.IsAny<FoodDto>()),
+            Times.Never
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Never);
+    }
+
+    private bool IsFoodDtoMatchingRequest(FoodDto foodDto, CreateOrUpdateFoodRequest request)
     {
         return foodDto.Name == request.Name;
     }

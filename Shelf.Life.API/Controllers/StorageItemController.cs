@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Services;
 using System.Net;
 

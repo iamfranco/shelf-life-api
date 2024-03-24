@@ -1,4 +1,6 @@
 ﻿using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
+using System.Runtime.CompilerServices;
 
 namespace Shelf.Life.Database.Models;
 public class FoodDto
@@ -7,7 +9,7 @@ public class FoodDto
     public string Name { get; set; }
     public DateTime LastUsed { get; set; }
 
-    public static FoodDto FromRequest(CreateFoodRequest request)
+    public static FoodDto FromRequest(CreateOrUpdateFoodRequest request)
     {
         var foodDto = new FoodDto
         {
@@ -27,5 +29,11 @@ public class FoodDto
         );
 
         return food;
+    }
+
+    public void Update(CreateOrUpdateFoodRequest request)
+    {
+        Name = request.Name;
+        LastUsed = DateTime.UtcNow;
     }
 }

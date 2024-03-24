@@ -1,4 +1,5 @@
 ﻿using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Shelf.Life.Database.Models;
