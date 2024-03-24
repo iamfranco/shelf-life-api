@@ -25,7 +25,7 @@ public class StorageItemDtoTests
     public void GivenRequest_WhenFromRequest_ThenReturnStorageItemDto()
     {
         //Given
-        var request = _fixture.Create<CreateStorageItemRequest>();
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
 
         //When
         var result = StorageItemDto.FromRequest(request);
@@ -33,5 +33,19 @@ public class StorageItemDtoTests
         //Then
         result.GetType().Should().Be(typeof(StorageItemDto));
         result.Should().BeEquivalentTo(request);
+    }
+
+    [Fact]
+    public void GivenRequest_WhenUpdate_ThenUpdatesStorageItemDto()
+    {
+        //Given
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
+        var storageItemDto = _fixture.Create<StorageItemDto>();
+
+        //When
+        storageItemDto.Update(request);
+
+        //Then
+        storageItemDto.Should().BeEquivalentTo(request);
     }
 }

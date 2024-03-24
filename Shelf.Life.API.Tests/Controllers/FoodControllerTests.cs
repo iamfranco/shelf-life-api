@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Shelf.Life.API.Controllers;
-using Shelf.Life.API.Models;
 using Shelf.Life.API.Validators;
 using Shelf.Life.API.Validators.Models;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
-using System.Net;
 
 namespace Shelf.Life.API.Tests.Controllers;
 public class FoodControllerTests
@@ -33,7 +32,7 @@ public class FoodControllerTests
         var result = (OkObjectResult)_subject.GetAll();
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().BeEquivalentTo(foods);
     }
 
@@ -47,7 +46,7 @@ public class FoodControllerTests
         var result = (NoContentResult)await _subject.Create(request);
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
+        result.StatusCode.Should().Be(StatusCodes.Status204NoContent);
 
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Insert(request), Times.Once);
@@ -88,7 +87,7 @@ public class FoodControllerTests
         var result = (OkObjectResult)_subject.GetByPartialName(partialName);
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().BeEquivalentTo(matchingFoods);
     }
 
@@ -106,7 +105,7 @@ public class FoodControllerTests
         var result = (OkObjectResult)_subject.Get(id);
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().Be(matchingFood);
     }
 
@@ -133,7 +132,7 @@ public class FoodControllerTests
         var result = (NoContentResult)await _subject.Update(id, request);
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
+        result.StatusCode.Should().Be(StatusCodes.Status204NoContent);
 
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Update(id, request), Times.Once);
@@ -170,7 +169,7 @@ public class FoodControllerTests
         var result = (NoContentResult)await _subject.Delete(id);
 
         //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
+        result.StatusCode.Should().Be(StatusCodes.Status204NoContent);
 
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Delete(id), Times.Once);

@@ -1,5 +1,5 @@
 ﻿namespace Shelf.Life.Domain.Models.Requests;
-public record CreateStorageItemRequest(
+public record CreateOrUpdateStorageItemRequest(
     int FoodId,
     DateTime ExpiryDate
 );

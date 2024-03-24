@@ -18,6 +18,7 @@ public static class ServiceCollection
     private static IServiceCollection AddApiServices(this IServiceCollection services)
     {
         services.AddTransient<IFoodValidator, FoodValidator>();
+        services.AddTransient<IStorageItemValidator, StorageItemValidator>();
 
         return services;
     }

@@ -4,6 +4,9 @@ using Shelf.Life.Domain.Models.Requests;
 namespace Shelf.Life.Domain.Stores;
 public interface IStorageItemStore
 {
-    Task<IEnumerable<StorageItem>> Get();
-    Task Insert(CreateStorageItemRequest request);
+    Task Delete(int id);
+    StorageItem? FindById(int id);
+    IEnumerable<StorageItem> Get();
+    Task Insert(CreateOrUpdateStorageItemRequest request);
+    Task Update(int id, CreateOrUpdateStorageItemRequest request);
 }

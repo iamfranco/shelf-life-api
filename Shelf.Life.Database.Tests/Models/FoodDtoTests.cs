@@ -36,7 +36,7 @@ public class FoodDtoTests
     }
 
     [Fact]
-    public void GivenUpdateRequest_WhenUpdate_ThenReturnFoodDto()
+    public void GivenUpdateRequest_WhenUpdate_ThenUpdatesFoodDto()
     {
         //Given
         var foodDto = _fixture.Create<FoodDto>();

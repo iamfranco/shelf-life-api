@@ -14,15 +14,52 @@ public class StorageItemStore : IStorageItemStore
         _context = context;
     }
 
-    public async Task<IEnumerable<StorageItem>> Get()
+    public async Task Delete(int id)
+    {
+        var storageItemDto = FindStorageItemDtoById(id);
+        if (storageItemDto is null)
+        {
+            return;
+        }
+
+        _context.StorageItems.Remove(storageItemDto);
+        await _context.SaveChangesAsync();
+    }
+
+    public StorageItem? FindById(int id)
+    {
+        return FindStorageItemDtoById(id)?.ToStorageItem();
+    }
+
+    public IEnumerable<StorageItem> Get()
     {
         return _context.StorageItems.Select(storageItemDto => storageItemDto.ToStorageItem());
     }
 
-    public async Task Insert(CreateStorageItemRequest request)
+    public async Task Insert(CreateOrUpdateStorageItemRequest request)
     {
         var storageItemDto = StorageItemDto.FromRequest(request);
         await _context.StorageItems.AddAsync(storageItemDto);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task Update(int id, CreateOrUpdateStorageItemRequest request)
+    {
+        var matchingStorageItem = FindStorageItemDtoById(id);
+        if (matchingStorageItem is null)
+        {
+            return;
+        }
+
+        matchingStorageItem.Update(request);
+
+        _context.StorageItems.Update(matchingStorageItem);
+        await _context.SaveChangesAsync();
+    }
+
+    private StorageItemDto? FindStorageItemDtoById(int id)
+    {
+        var matchingStorageItem = _context.StorageItems.FirstOrDefault(storageItemDto => storageItemDto.Id == id);
+        return matchingStorageItem;
     }
 }
