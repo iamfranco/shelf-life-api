@@ -1,4 +1,5 @@
 ﻿using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Shelf.Life.Database.Models;
@@ -10,7 +11,7 @@ public class StorageItemDto
     public int FoodId { get; set; }
     public DateTime ExpiryDate { get; set; }
 
-    public static StorageItemDto FromRequest(CreateStorageItemRequest request)
+    public static StorageItemDto FromRequest(CreateOrUpdateStorageItemRequest request)
     {
         var storageItemDto = new StorageItemDto
         {
@@ -30,5 +31,11 @@ public class StorageItemDto
         );
 
         return storageItem;
+    }
+
+    public void Update(CreateOrUpdateStorageItemRequest request)
+    {
+        FoodId = request.FoodId;
+        ExpiryDate = request.ExpiryDate;
     }
 }

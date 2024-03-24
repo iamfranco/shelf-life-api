@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Shelf.Life.Database.Contexts;
+﻿using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Database.Stores;
+using Shelf.Life.Database.Tests.TestHelpers;
+using Shelf.Life.Domain.Exceptions;
 using Shelf.Life.Domain.Models;
+using Shelf.Life.Domain.Models.Requests;
 
 namespace Shelf.Life.Database.Tests.Stores;
 public class StorageItemStoreTests
@@ -19,32 +21,102 @@ public class StorageItemStoreTests
     }
 
     [Fact]
-    public async Task GivenFoodsExist_WhenGet_ThenReturnAllFoods()
+    public async Task GivenId_WhenDelete_ThenStorageItemDeleted()
+    {
+        //Given
+        var matchingStorageItem = _fixture.Create<StorageItemDto>();
+        var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
+        SetDbStorageItems(storageItems);
+
+        var id = matchingStorageItem.Id;
+
+        //When
+        await _subject.Delete(id);
+
+        //Then
+        _mockContext.Verify(
+            x => x.StorageItems.Remove(matchingStorageItem),
+            Times.Once
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GivenNoMatchingStorageItemExist_WhenDelete_ThenThrowNotFoundException()
+    {
+        //Given
+        var storageItems = Enumerable.Empty<StorageItemDto>();
+        SetDbStorageItems(storageItems);
+
+        var id = _fixture.Create<int>();
+
+        //When Then
+        var act = () => _subject.Delete(id);
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"{nameof(StorageItem)} with id [{id}] does NOT exist.");
+
+        _mockContext.Verify(x => x.StorageItems.Remove(It.IsAny<StorageItemDto>()), Times.Never);
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Never);
+    }
+
+    [Fact]
+    public void GivenMatchingStorageItemExists_WhenFindById_ThenReturnMatchingStorageItem()
+    {
+        //Given
+        var matchingStorageItem = _fixture.Create<StorageItemDto>();
+        var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
+        SetDbStorageItems(storageItems);
+
+        var id = matchingStorageItem.Id;
+
+        //When
+        var result = _subject.FindById(id);
+
+        //Then
+        result.Should().BeEquivalentTo(matchingStorageItem);
+    }
+
+    [Fact]
+    public void GivenNoMatchingStorageItemExist_WhenFindById_ThenReturnThrowNotFoundException()
+    {
+        //Given
+        var storageItems = Enumerable.Empty<StorageItemDto>();
+        SetDbStorageItems(storageItems);
+
+        var id = _fixture.Create<int>();
+
+        //When Then
+        var act = () => _subject.FindById(id);
+        act.Should().Throw<NotFoundException>()
+            .WithMessage($"{nameof(StorageItem)} with id [{id}] does NOT exist.");
+    }
+
+    [Fact]
+    public void GivenStorageItemExist_WhenGet_ThenReturnAllStorageItems()
     {
         //Given
         var storageItems = _fixture.CreateMany<StorageItemDto>();
-
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        SetDbStorageItems(storageItems);
 
         //When
-        var result = await _subject.Get();
+        var result = _subject.Get();
 
         //Then
         result.Should().BeEquivalentTo(storageItems, options => options.ExcludingMissingMembers());
     }
 
     [Fact]
-    public async Task GivenFood_WhenInsert_ThenFoodInserted()
+    public async Task GivenRequest_WhenInsert_ThenStorageItemInserted()
     {
         //Given
-        var request = _fixture.Create<CreateStorageItemRequest>();
-
         var storageItems = _fixture.CreateMany<StorageItemDto>();
+        SetDbStorageItems(storageItems);
 
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
 
         //When
-        await _subject.Insert(request);
+        var result = await _subject.Insert(request);
 
         //Then
         _mockContext.Verify(x => x.StorageItems.AddAsync(
@@ -53,24 +125,64 @@ public class StorageItemStoreTests
             ), Times.Once);
 
         _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+
+        result.Should().BeEquivalentTo(request);
     }
 
-    private bool IsStorageItemDtoMatchingRequest(StorageItemDto storageItemDto, CreateStorageItemRequest request)
+    [Fact]
+    public async Task GivenIdAndRequest_WhenUpdate_ThenStorageItemUpdated()
+    {
+        //Given
+        var matchingStorageItem = _fixture.Create<StorageItemDto>();
+        var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
+        SetDbStorageItems(storageItems);
+
+        var id = matchingStorageItem.Id;
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
+
+        //When
+        var result = await _subject.Update(id, request);
+
+        //Then
+        _mockContext.Verify(
+            x => x.StorageItems.Update(
+                It.Is<StorageItemDto>(si => si.Id == id && IsStorageItemDtoMatchingRequest(si, request))
+            ),
+            Times.Once
+        );
+
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+
+        result.Should().BeEquivalentTo(request);
+    }
+
+    [Fact]
+    public async Task GivenNoMatchingStorageItemExists_WhenUpdate_ThenThrowNotFoundException()
+    {
+        //Given
+        var storageItems = Enumerable.Empty<StorageItemDto>();
+        SetDbStorageItems(storageItems);
+
+        var id = _fixture.Create<int>();
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
+
+        //When Then
+        var act = () => _subject.Update(id, request);
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"{nameof(StorageItem)} with id [{id}] does NOT exist.");
+
+        _mockContext.Verify(x => x.StorageItems.Update(It.IsAny<StorageItemDto>()), Times.Never);
+        _mockContext.Verify(x => x.SaveChangesAsync(default), Times.Never);
+    }
+
+    private static bool IsStorageItemDtoMatchingRequest(StorageItemDto storageItemDto, CreateOrUpdateStorageItemRequest request)
     {
         return storageItemDto.FoodId == request.FoodId &&
             storageItemDto.ExpiryDate == request.ExpiryDate;
     }
 
-    private Mock<DbSet<StorageItemDto>> GetMockSet(IEnumerable<StorageItemDto> storageItems)
+    private void SetDbStorageItems(IEnumerable<StorageItemDto> storageItems)
     {
-        var data = storageItems.AsQueryable();
-
-        var mockSet = new Mock<DbSet<StorageItemDto>>();
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.Provider).Returns(data.Provider);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.Expression).Returns(data.Expression);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.ElementType).Returns(data.ElementType);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-        return mockSet;
+        _mockContext.Setup(x => x.StorageItems).Returns(DbMockTestHelper.GetMockSet(storageItems).Object);
     }
 }

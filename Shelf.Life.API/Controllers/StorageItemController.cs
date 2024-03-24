@@ -1,39 +1,51 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Shelf.Life.Domain.Models;
-using Shelf.Life.Domain.Services;
-using System.Net;
+using Shelf.Life.Domain.Models.Requests;
+using Shelf.Life.Domain.Stores;
 
 namespace Shelf.Life.API.Controllers;
 
 [Route("api/storageItems")]
 public class StorageItemController : Controller
 {
-    private readonly IStorageItemService _storageItemService;
+    private readonly IStorageItemStore _storageItemStore;
 
-    public StorageItemController(IStorageItemService storageItemService)
+    public StorageItemController(IStorageItemStore storageItemStore)
     {
-        _storageItemService = storageItemService;
+        _storageItemStore = storageItemStore;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public IActionResult GetAll()
     {
-        try
-        {
-            var storageItems = await _storageItemService.Get();
-            return Ok(storageItems);
-        }
-        catch (Exception exception)
-        {
-            var value = $"{nameof(StorageItemService)}:GET throws unexpected exception: {exception.Message}";
-            return StatusCode((int)HttpStatusCode.InternalServerError, value);
-        }
+        var storageItems = _storageItemStore.Get();
+        return Ok(storageItems);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateStorageItemRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateOrUpdateStorageItemRequest request)
     {
-        await _storageItemService.Insert(request);
+        var createdStorageItem = await _storageItemStore.Insert(request);
+        return Ok(createdStorageItem);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult Get(int id)
+    {
+        var matchingStorageItem = _storageItemStore.FindById(id);
+        return Ok(matchingStorageItem);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateOrUpdateStorageItemRequest request)
+    {
+        var updatedStorageItem = await _storageItemStore.Update(id, request);
+        return Ok(updatedStorageItem);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _storageItemStore.Delete(id);
         return NoContent();
     }
 }

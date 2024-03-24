@@ -1,5 +1,5 @@
-﻿using Shelf.Life.Domain.IoC;
-using Shelf.Life.Database.IoC;
+﻿using Shelf.Life.Database.IoC;
+using Shelf.Life.Domain.IoC;
 
 namespace Shelf.Life.API.IoC;
 
