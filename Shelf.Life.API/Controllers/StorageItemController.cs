@@ -1,7 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Shelf.Life.API.Validators;
-using Shelf.Life.API.Validators.Models;
-using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
 
@@ -11,12 +8,10 @@ namespace Shelf.Life.API.Controllers;
 public class StorageItemController : Controller
 {
     private readonly IStorageItemStore _storageItemStore;
-    private readonly IStorageItemValidator _storageItemValidator;
 
-    public StorageItemController(IStorageItemStore storageItemStore, IStorageItemValidator storageItemValidator)
+    public StorageItemController(IStorageItemStore storageItemStore)
     {
         _storageItemStore = storageItemStore;
-        _storageItemValidator = storageItemValidator;
     }
 
     [HttpGet]
@@ -29,36 +24,27 @@ public class StorageItemController : Controller
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOrUpdateStorageItemRequest request)
     {
-        await _storageItemStore.Insert(request);
-        return NoContent();
+        var createdStorageItem = await _storageItemStore.Insert(request);
+        return Ok(createdStorageItem);
     }
 
     [HttpGet("{id}")]
     public IActionResult Get(int id)
     {
         var matchingStorageItem = _storageItemStore.FindById(id);
-        if (matchingStorageItem is null)
-        {
-            throw new NotFoundException($"{nameof(StorageItem)} with id [{id}] does NOT exist.");
-        }
-
         return Ok(matchingStorageItem);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateOrUpdateStorageItemRequest request)
     {
-        _storageItemValidator.ThrowIfStorageItemDoesNotExist(id);
-
-        await _storageItemStore.Update(id, request);
-        return NoContent();
+        var updatedStorageItem = await _storageItemStore.Update(id, request);
+        return Ok(updatedStorageItem);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        _storageItemValidator.ThrowIfStorageItemDoesNotExist(id);
-
         await _storageItemStore.Delete(id);
         return NoContent();
     }

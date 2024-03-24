@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shelf.Life.API.Controllers;
-using Shelf.Life.API.Validators;
-using Shelf.Life.API.Validators.Models;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
@@ -38,19 +36,22 @@ public class StorageItemControllerTests
     }
 
     [Fact]
-    public async Task GivenRequest_WhenCreate_ThenReturnNoContentStatus()
+    public async Task GivenRequest_WhenCreate_ThenReturnOkStatus()
     {
         //Given
         var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
 
+        var createdStorageItem = _fixture.Create<StorageItem>();
+        _autoMocker.GetMock<IStorageItemStore>()
+            .Setup(x => x.Insert(request))
+            .ReturnsAsync(createdStorageItem);
+
         //When
-        var result = (NoContentResult)await _subject.Create(request);
+        var result = (OkObjectResult)await _subject.Create(request);
 
         //Then
-        result.StatusCode.Should().Be(StatusCodes.Status204NoContent);
-
-        _autoMocker.GetMock<IStorageItemStore>()
-            .Verify(x => x.Insert(request), Times.Once);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(createdStorageItem);
     }
 
     [Fact]
@@ -73,53 +74,23 @@ public class StorageItemControllerTests
     }
 
     [Fact]
-    public void GivenNoMatchingStorageItemExist_WhenGet_ThenThrowsNotFoundException()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-
-        //When Then
-        var act = () => _subject.Get(id);
-        act.Should().Throw<NotFoundException>()
-            .WithMessage($"{nameof(StorageItem)} with id [{id}] does NOT exist.");
-    }
-
-    [Fact]
-    public async Task GivenIdAndRequest_WhenUpdate_ThenReturnsNoContentAndUpdatesStorageItem()
+    public async Task GivenIdAndRequest_WhenUpdate_ThenReturnsOkStatus()
     {
         //Given
         var id = _fixture.Create<int>();
         var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
+
+        var updatedStorageItem = _fixture.Create<StorageItem>();
+        _autoMocker.GetMock<IStorageItemStore>()
+            .Setup(x => x.Update(id, request))
+            .ReturnsAsync(updatedStorageItem);
 
         //When
-        var result = (NoContentResult)await _subject.Update(id, request);
+        var result = (OkObjectResult)await _subject.Update(id, request);
 
         //Then
-        result.StatusCode.Should().Be(StatusCodes.Status204NoContent);
-
-        _autoMocker.GetMock<IStorageItemStore>()
-            .Verify(x => x.Update(id, request), Times.Once);
-    }
-
-    [Fact]
-    public async Task GivenValidatorThrowsNotFoundException_WhenUpdate_ThenThrowsNotFoundException()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
-
-        var exception = _fixture.Create<NotFoundException>();
-        _autoMocker.GetMock<IStorageItemValidator>()
-            .Setup(x => x.ThrowIfStorageItemDoesNotExist(id))
-            .Throws(exception);
-
-        //When Then
-        var act = () => _subject.Update(id, request);
-        await act.Should().ThrowAsync<NotFoundException>()
-            .WithMessage(exception.Message);
-
-        _autoMocker.GetMock<IStorageItemStore>()
-            .Verify(x => x.Update(id, request), Times.Never);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(updatedStorageItem);
     }
 
     [Fact]
@@ -136,25 +107,5 @@ public class StorageItemControllerTests
 
         _autoMocker.GetMock<IStorageItemStore>()
             .Verify(x => x.Delete(id), Times.Once);
-    }
-
-    [Fact]
-    public async Task GivenValidatorThrowsNotFoundException_WhenDelete_ThenThrowsNotFoundException()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-
-        var exception = _fixture.Create<NotFoundException>();
-        _autoMocker.GetMock<IStorageItemValidator>()
-            .Setup(x => x.ThrowIfStorageItemDoesNotExist(id))
-            .Throws(exception);
-
-        //When Then
-        var act = () => _subject.Delete(id);
-        await act.Should().ThrowAsync<NotFoundException>()
-            .WithMessage(exception.Message);
-
-        _autoMocker.GetMock<IStorageItemStore>()
-            .Verify(x => x.Delete(id), Times.Never);
     }
 }

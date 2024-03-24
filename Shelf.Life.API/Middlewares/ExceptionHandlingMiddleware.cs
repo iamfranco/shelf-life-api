@@ -1,5 +1,5 @@
 ﻿using Shelf.Life.API.Models;
-using Shelf.Life.API.Validators.Models;
+using Shelf.Life.Domain.Exceptions;
 
 namespace Shelf.Life.API.Middlewares;
 
@@ -34,7 +34,7 @@ public class ExceptionHandlingMiddleware
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception, int statusCode)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, int statusCode)
     {
         context.Response.StatusCode = statusCode;
 

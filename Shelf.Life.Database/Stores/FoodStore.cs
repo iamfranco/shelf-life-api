@@ -1,5 +1,7 @@
-﻿using Shelf.Life.Database.Contexts;
+﻿using Newtonsoft.Json;
+using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
+using Shelf.Life.Domain.Exceptions;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
@@ -14,15 +16,9 @@ public class FoodStore : IFoodStore
         _context = context;
     }
 
-    public Food? FindByName(string name)
+    public Food FindById(int id)
     {
-        var matchingFoodDto = _context.Foods.FirstOrDefault(foodDto => foodDto.Name == name);
-        return matchingFoodDto?.ToFood();
-    }
-
-    public Food? FindById(int id)
-    {
-        return FindDtoById(id)?.ToFood();
+        return TryFindDtoById(id).ToFood();
     }
 
     public IEnumerable<Food> Get()
@@ -37,42 +33,54 @@ public class FoodStore : IFoodStore
             .Select(foodDto => foodDto.ToFood());
     }
 
-    public async Task Insert(CreateOrUpdateFoodRequest request)
+    public async Task<Food> Insert(CreateOrUpdateFoodRequest request)
     {
+        ThrowIfHasMatchingFood(request.Name);
+
         var foodDto = FoodDto.FromRequest(request);
-        await _context.Foods.AddAsync(foodDto);
+        _context.Foods.Add(foodDto);
         await _context.SaveChangesAsync();
+
+        return foodDto.ToFood();
     }
 
-    public async Task Update(int id, CreateOrUpdateFoodRequest request)
+    public async Task<Food> Update(int id, CreateOrUpdateFoodRequest request)
     {
-        var matchingFoodDto = FindDtoById(id);
-        if (matchingFoodDto is null)
-        {
-            return;
-        }
+        var matchingFoodDto = TryFindDtoById(id);
 
         matchingFoodDto.Update(request);
 
         _context.Foods.Update(matchingFoodDto);
         await _context.SaveChangesAsync();
+
+        return matchingFoodDto.ToFood();
     }
 
     public async Task Delete(int id)
     {
-        var matchingFoodDto = FindDtoById(id);
-        if (matchingFoodDto is null)
-        {
-            return;
-        }
+        var matchingFoodDto = TryFindDtoById(id);
 
         _context.Foods.Remove(matchingFoodDto);
         await _context.SaveChangesAsync();
     }
 
-    private FoodDto? FindDtoById(int id)
+    private FoodDto TryFindDtoById(int id)
     {
         var matchingFoodDto = _context.Foods.FirstOrDefault(foodDto => foodDto.Id == id);
+        if (matchingFoodDto is null)
+        {
+            throw new NotFoundException($"{nameof(Food)} with id [{id}] does NOT exist.");
+        }
+        
         return matchingFoodDto;
+    }
+
+    private void ThrowIfHasMatchingFood(string name)
+    {
+        var matchingFoodDto = _context.Foods.FirstOrDefault(foodDto => foodDto.Name == name);
+        if ( matchingFoodDto is not null)
+        {
+            throw new BadRequestException($"{nameof(Food)} with name [{name}] already exist. Food: {JsonConvert.SerializeObject(matchingFoodDto)}");
+        }
     }
 }

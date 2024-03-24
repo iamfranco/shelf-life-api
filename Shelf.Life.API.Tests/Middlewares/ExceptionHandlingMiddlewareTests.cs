@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Shelf.Life.API.Middlewares;
 using Shelf.Life.API.Models;
-using Shelf.Life.API.Validators.Models;
+using Shelf.Life.Domain.Exceptions;
 using System.Text;
 
 namespace Shelf.Life.API.Tests.Middlewares;
