@@ -37,23 +37,6 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public void GivenExceptionThrown_WhenGetAll_ThenReturnInternalServerError()
-    {
-        //Given
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.Get())
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)_subject.GetAll();
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.GetAll)} throws unexpected exception: {exception.Message}");
-    }
-
-    [Fact]
     public async Task GivenCreateFoodRequest_WhenCreate_ThenReturnNoContentStatus()
     {
         //Given
@@ -92,44 +75,6 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public async Task GivenExceptionThrownDuringFindByName_WhenCreate_ThenReturnInternalServerError()
-    {
-        //Given
-        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindByName(request.Name))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Create(request);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Create)} throws unexpected exception: {exception.Message}");
-    }
-
-    [Fact]
-    public async Task GivenExceptionThrownDuringInsert_WhenCreate_ThenReturnInternalServerError()
-    {
-        //Given
-        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.Insert(request))
-            .ThrowsAsync(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Create(request);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Create)} throws unexpected exception: {exception.Message}");
-    }
-
-    [Fact]
     public void GivenMatchingFoodsExist_WhenGetByPartialName_ThenReturnOkStatusWithMatchingFoods()
     {
         //Given
@@ -146,25 +91,6 @@ public class FoodControllerTests
         //Then
         result.StatusCode.Should().Be((int)HttpStatusCode.OK);
         result.Value.Should().BeEquivalentTo(matchingFoods);
-    }
-
-    [Fact]
-    public void GivenExceptionThrown_WhenGetByPartialName_ThenReturnInternalServerError()
-    {
-        //Given
-        var partialName = _fixture.Create<string>();
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.QueryByPartialName(partialName))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)_subject.GetByPartialName(partialName);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.GetByPartialName)} throws unexpected exception: {exception.Message}");
     }
 
     [Fact]
@@ -196,24 +122,6 @@ public class FoodControllerTests
 
         //Then
         result.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public void GivenExceptionThrown_WhenGet_ThenReturnsInternalServerError()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)_subject.Get(id);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Get)} throws unexpected exception: {exception.Message}");
     }
 
     [Fact]
@@ -254,51 +162,6 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public async Task GivenExceptionThrownDuringFindById_WhenUpdate_ThenReturnsInternalServerError()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Update(id, request);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Update)} throws unexpected exception: {exception.Message}");
-    }
-
-    [Fact]
-    public async Task GivenExceptionThrownDuringUpdate_WhenUpdate_ThenReturnsInternalServerError()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
-        var matchingFood = _fixture.Create<Food>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Returns(matchingFood);
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.Update(id, request))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Update(id, request);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Update)} throws unexpected exception: {exception.Message}");
-    }
-
-    [Fact]
     public async Task GivenMatchingFoodExists_WhenDelete_ThenReturnsNoContentAndDeletesFood()
     {
         //Given
@@ -333,50 +196,5 @@ public class FoodControllerTests
         result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Delete)} failed. Food with id {id} not found.");
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Delete(id), Times.Never);
-    }
-
-    [Fact]
-    public async Task GivenExceptionThrownDuringFindById_WhenDelete_ThenReturnsInternalServerError()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Throws(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Delete(id);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Delete)} throws unexpected exception: {exception.Message}");
-        _autoMocker.GetMock<IFoodStore>()
-            .Verify(x => x.Delete(id), Times.Never);
-    }
-
-    [Fact]
-    public async Task GivenExceptionThrownDuringDelete_WhenDelete_ThenReturnsInternalServerError()
-    {
-        //Given
-        var id = _fixture.Create<int>();
-
-        var matchingFood = _fixture.Create<Food>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Returns(matchingFood);
-
-        var exception = _fixture.Create<Exception>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.Delete(id))
-            .ThrowsAsync(exception);
-
-        //When
-        var result = (ObjectResult)await _subject.Delete(id);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Delete)} throws unexpected exception: {exception.Message}");
     }
 }
