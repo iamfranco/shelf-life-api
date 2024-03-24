@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Shelf.Life.Database.Contexts;
+﻿using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Database.Stores;
-using Shelf.Life.Domain.Models;
+using Shelf.Life.Database.Tests.TestHelpers;
 using Shelf.Life.Domain.Models.Requests;
 
 namespace Shelf.Life.Database.Tests.Stores;
@@ -23,19 +22,18 @@ public class StorageItemStoreTests
     public async Task GivenId_WhenDelete_ThenStorageItemDeleted()
     {
         //Given
-        var storageItem = _fixture.Create<StorageItemDto>();
-        var storageItems = _fixture.CreateMany<StorageItemDto>().Append(storageItem);
+        var matchingStorageItem = _fixture.Create<StorageItemDto>();
+        var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
+        SetDbStorageItems(storageItems);
 
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
-
-        var id = storageItem.Id;
+        var id = matchingStorageItem.Id;
 
         //When
-        var result = _subject.Delete(id);
+        await _subject.Delete(id);
 
         //Then
         _mockContext.Verify(
-            x => x.StorageItems.Remove(storageItem),
+            x => x.StorageItems.Remove(matchingStorageItem),
             Times.Once
         );
 
@@ -46,13 +44,13 @@ public class StorageItemStoreTests
     public async Task GivenNoMatchingStorageItemExist_WhenDelete_ThenNoAction()
     {
         //Given
+        var storageItems = Enumerable.Empty<StorageItemDto>();
+        SetDbStorageItems(storageItems);
+
         var id = _fixture.Create<int>();
 
-        var storageItems = Enumerable.Empty<StorageItemDto>();
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
-
         //When
-        var result = _subject.Delete(id);
+        await _subject.Delete(id);
 
         //Then
         _mockContext.Verify(
@@ -69,9 +67,9 @@ public class StorageItemStoreTests
         //Given
         var matchingStorageItem = _fixture.Create<StorageItemDto>();
         var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
-        var id = matchingStorageItem.Id;
+        SetDbStorageItems(storageItems);
 
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        var id = matchingStorageItem.Id;
 
         //When
         var result = _subject.FindById(id);
@@ -84,10 +82,10 @@ public class StorageItemStoreTests
     public void GivenNoMatchingStorageItemExist_WhenFindById_ThenReturnNull()
     {
         //Given
-        var id = _fixture.Create<int>();
         var storageItems = Enumerable.Empty<StorageItemDto>();
+        SetDbStorageItems(storageItems);
 
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        var id = _fixture.Create<int>();
 
         //When
         var result = _subject.FindById(id);
@@ -101,8 +99,7 @@ public class StorageItemStoreTests
     {
         //Given
         var storageItems = _fixture.CreateMany<StorageItemDto>();
-
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        SetDbStorageItems(storageItems);
 
         //When
         var result = _subject.Get();
@@ -115,11 +112,10 @@ public class StorageItemStoreTests
     public async Task GivenRequest_WhenInsert_ThenStorageItemInserted()
     {
         //Given
-        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
-
         var storageItems = _fixture.CreateMany<StorageItemDto>();
+        SetDbStorageItems(storageItems);
 
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
 
         //When
         await _subject.Insert(request);
@@ -139,8 +135,7 @@ public class StorageItemStoreTests
         //Given
         var matchingStorageItem = _fixture.Create<StorageItemDto>();
         var storageItems = _fixture.CreateMany<StorageItemDto>().Append(matchingStorageItem);
-
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        SetDbStorageItems(storageItems);
 
         var id = matchingStorageItem.Id;
         var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
@@ -151,8 +146,8 @@ public class StorageItemStoreTests
         //Then
         _mockContext.Verify(
             x => x.StorageItems.Update(
-                It.Is<StorageItemDto>(si => si.FoodId == request.FoodId && si.ExpiryDate == request.ExpiryDate)
-            ), 
+                It.Is<StorageItemDto>(si => si.Id == id && IsStorageItemDtoMatchingRequest(si, request))
+            ),
             Times.Once
         );
 
@@ -164,7 +159,7 @@ public class StorageItemStoreTests
     {
         //Given
         var storageItems = Enumerable.Empty<StorageItemDto>();
-        _mockContext.Setup(x => x.StorageItems).Returns(GetMockSet(storageItems).Object);
+        SetDbStorageItems(storageItems);
 
         var id = _fixture.Create<int>();
         var request = _fixture.Create<CreateOrUpdateStorageItemRequest>();
@@ -187,16 +182,8 @@ public class StorageItemStoreTests
             storageItemDto.ExpiryDate == request.ExpiryDate;
     }
 
-    private Mock<DbSet<StorageItemDto>> GetMockSet(IEnumerable<StorageItemDto> storageItems)
+    private void SetDbStorageItems(IEnumerable<StorageItemDto> storageItems)
     {
-        var data = storageItems.AsQueryable();
-
-        var mockSet = new Mock<DbSet<StorageItemDto>>();
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.Provider).Returns(data.Provider);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.Expression).Returns(data.Expression);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.ElementType).Returns(data.ElementType);
-        mockSet.As<IQueryable<StorageItemDto>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-        return mockSet;
+        _mockContext.Setup(x => x.StorageItems).Returns(DbMockTestHelper.GetMockSet(storageItems).Object);
     }
 }

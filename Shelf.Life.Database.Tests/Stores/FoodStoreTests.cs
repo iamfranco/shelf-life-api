@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Shelf.Life.Database.Contexts;
+﻿using Shelf.Life.Database.Contexts;
 using Shelf.Life.Database.Models;
 using Shelf.Life.Database.Stores;
+using Shelf.Life.Database.Tests.TestHelpers;
 using Shelf.Life.Domain.Models.Requests;
 
 namespace Shelf.Life.Database.Tests.Stores;
@@ -15,7 +15,6 @@ public class FoodStoreTests
     public FoodStoreTests()
     {
         _mockContext = new Mock<DatabaseContext>();
-
         _subject = new FoodStore(_mockContext.Object);
     }
 
@@ -25,9 +24,9 @@ public class FoodStoreTests
         //Given
         var matchingFood = _fixture.Create<FoodDto>();
         var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
-        var name = matchingFood.Name;
+        SetDbFoods(foods);
 
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        var name = matchingFood.Name;
 
         //When
         var result = _subject.FindByName(name);
@@ -41,9 +40,9 @@ public class FoodStoreTests
     {
         //Given
         var foods = _fixture.CreateMany<FoodDto>();
-        var name = _fixture.Create<string>();
+        SetDbFoods(foods);
 
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        var name = _fixture.Create<string>();
 
         //When
         var result = _subject.FindByName(name);
@@ -58,9 +57,9 @@ public class FoodStoreTests
         //Given
         var matchingFood = _fixture.Create<FoodDto>();
         var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
-        var id = matchingFood.Id;
+        SetDbFoods(foods);
 
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        var id = matchingFood.Id;
 
         //When
         var result = _subject.FindById(id);
@@ -74,9 +73,9 @@ public class FoodStoreTests
     {
         //Given
         var foods = _fixture.CreateMany<FoodDto>();
-        var id = _fixture.Create<int>();
+        SetDbFoods(foods);
 
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        var id = _fixture.Create<int>();
 
         //When
         var result = _subject.FindById(id);
@@ -90,8 +89,7 @@ public class FoodStoreTests
     {
         //Given
         var foods = _fixture.CreateMany<FoodDto>();
-
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         //When
         var result = _subject.Get();
@@ -117,8 +115,7 @@ public class FoodStoreTests
         var matchingFoods = matchingFoodsSameCase.Concat(matchingFoodsWrongCase);
 
         var foods = _fixture.CreateMany<FoodDto>().Concat(matchingFoods);
-
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         //When
         var result = _subject.QueryByPartialName(partialName);
@@ -131,11 +128,10 @@ public class FoodStoreTests
     public async Task GivenFood_WhenInsert_ThenFoodInserted()
     {
         //Given
-        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
         var foods = _fixture.CreateMany<FoodDto>();
+        SetDbFoods(foods);
 
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        var request = _fixture.Create<CreateOrUpdateFoodRequest>();
 
         //When
         await _subject.Insert(request);
@@ -155,8 +151,7 @@ public class FoodStoreTests
         //Given
         var matchingFood = _fixture.Create<FoodDto>();
         var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
-
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         var id = matchingFood.Id;
         var request = _fixture.Create<CreateOrUpdateFoodRequest>();
@@ -167,7 +162,7 @@ public class FoodStoreTests
         //Then
         _mockContext.Verify(
             x => x.Foods.Update(
-                It.Is<FoodDto>(foodDto => foodDto.Id == id && foodDto.Name == request.Name)
+                It.Is<FoodDto>(foodDto => foodDto.Id == id && IsFoodDtoMatchingRequest(foodDto, request))
             ),
             Times.Once
         );
@@ -180,7 +175,7 @@ public class FoodStoreTests
     {
         //Given
         var foods = Enumerable.Empty<FoodDto>();
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         var id = _fixture.Create<int>();
         var request = _fixture.Create<CreateOrUpdateFoodRequest>();
@@ -203,8 +198,7 @@ public class FoodStoreTests
         //Given
         var matchingFood = _fixture.Create<FoodDto>();
         var foods = _fixture.CreateMany<FoodDto>().Append(matchingFood);
-
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         var id = matchingFood.Id;
 
@@ -227,7 +221,7 @@ public class FoodStoreTests
         var id = _fixture.Create<int>();
 
         var foods = Enumerable.Empty<FoodDto>();
-        _mockContext.Setup(x => x.Foods).Returns(GetMockSet(foods).Object);
+        SetDbFoods(foods);
 
         //When
         await _subject.Delete(id);
@@ -246,16 +240,8 @@ public class FoodStoreTests
         return foodDto.Name == request.Name;
     }
 
-    private Mock<DbSet<FoodDto>> GetMockSet(IEnumerable<FoodDto> foods)
+    private void SetDbFoods(IEnumerable<FoodDto> foods)
     {
-        var data = foods.AsQueryable();
-
-        var mockSet = new Mock<DbSet<FoodDto>>();
-        mockSet.As<IQueryable<FoodDto>>().Setup(m => m.Provider).Returns(data.Provider);
-        mockSet.As<IQueryable<FoodDto>>().Setup(m => m.Expression).Returns(data.Expression);
-        mockSet.As<IQueryable<FoodDto>>().Setup(m => m.ElementType).Returns(data.ElementType);
-        mockSet.As<IQueryable<FoodDto>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-        return mockSet;
+        _mockContext.Setup(x => x.Foods).Returns(DbMockTestHelper.GetMockSet(foods).Object);
     }
 }
