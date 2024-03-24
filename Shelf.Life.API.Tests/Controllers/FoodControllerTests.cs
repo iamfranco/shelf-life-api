@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Shelf.Life.API.Controllers;
+using Shelf.Life.API.Models;
+using Shelf.Life.API.Validators;
+using Shelf.Life.API.Validators.Models;
 using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
-using System;
 using System.Net;
-using System.Text.Json;
 
 namespace Shelf.Life.API.Tests.Controllers;
 public class FoodControllerTests
@@ -53,22 +54,20 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public async Task GivenFoodAlreadyExist_WhenCreate_ThenReturnBadRequestStatus()
+    public async Task GivenValidatorThrowsBadRequestException_WhenCreate_ThenExceptionThrown()
     {
         //Given
         var request = _fixture.Create<CreateOrUpdateFoodRequest>();
 
-        var matchingFood = _fixture.Create<Food>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindByName(request.Name))
-            .Returns(matchingFood);
+        var exception = _fixture.Create<BadRequestException>();
+        _autoMocker.GetMock<IFoodValidator>()
+            .Setup(x => x.ThrowIfFoodExists(request.Name))
+            .Throws(exception);
 
-        //When
-        var result = (BadRequestObjectResult)await _subject.Create(request);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Create)} failed. Food with same name already exist, duplicate food: {JsonSerializer.Serialize(matchingFood)}");
+        //When Then
+        var act = () => _subject.Create(request);
+        await act.Should().ThrowAsync<BadRequestException>()
+            .WithMessage(exception.Message);
 
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Insert(request), Times.Never);
@@ -112,29 +111,23 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public void GivenNoMatchingFoodExists_WhenGet_ThenReturnsNotFoundStatus()
+    public void GivenNoMatchingFoodExists_WhenGet_ThenThrowNotFoundException()
     {
         //Given
         var id = _fixture.Create<int>();
 
-        //When
-        var result = (NotFoundResult)_subject.Get(id);
-
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+        //When Then
+        var act = () => _subject.Get(id);
+        act.Should().Throw<NotFoundException>()
+            .WithMessage($"{nameof(Food)} with id [{id}] does NOT exist.");
     }
 
     [Fact]
-    public async Task GivenMatchingFoodExists_WhenUpdate_ThenReturnsNoContentStatusAndUpdateFood()
+    public async Task WhenUpdate_ThenReturnsNoContentStatusAndUpdateFood()
     {
         //Given
         var id = _fixture.Create<int>();
         var request = _fixture.Create<CreateOrUpdateFoodRequest>();
-
-        var matchingFood = _fixture.Create<Food>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Returns(matchingFood);
 
         //When
         var result = (NoContentResult)await _subject.Update(id, request);
@@ -147,30 +140,31 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public async Task GivenNoMatchingFoodExists_WhenUpdate_ThenReturnsNotFoundStatus()
+    public async Task GivenValidatorThrowsNotFoundException_WhenUpdate_ThenThrowNotFoundException()
     {
         //Given
         var id = _fixture.Create<int>();
         var request = _fixture.Create<CreateOrUpdateFoodRequest>();
 
-        //When
-        var result = (NotFoundObjectResult)await _subject.Update(id, request);
+        var exception = _fixture.Create<NotFoundException>();
+        _autoMocker.GetMock<IFoodValidator>()
+            .Setup(x => x.ThrowIfFoodDoesNotExist(id))
+            .Throws(exception);
 
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Update)} failed. Food with id {id} not found.");
+        //When Then
+        var act = () => _subject.Update(id, request);
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage(exception.Message);
+
+        _autoMocker.GetMock<IFoodStore>()
+            .Verify(x => x.Update(id, request), Times.Never);
     }
 
     [Fact]
-    public async Task GivenMatchingFoodExists_WhenDelete_ThenReturnsNoContentAndDeletesFood()
+    public async Task WhenDelete_ThenReturnsNoContentAndDeletesFood()
     {
         //Given
         var id = _fixture.Create<int>();
-
-        var matchingFood = _fixture.Create<Food>();
-        _autoMocker.GetMock<IFoodStore>()
-            .Setup(x => x.FindById(id))
-            .Returns(matchingFood);
 
         //When
         var result = (NoContentResult)await _subject.Delete(id);
@@ -183,17 +177,21 @@ public class FoodControllerTests
     }
 
     [Fact]
-    public async Task GivenNoMatchingFoodExists_WhenDelete_ThenReturnsNotFoundStatus()
+    public async Task GivenValidatorThrowsNotFoundException_WhenDelete_ThenThrowNotFoundException()
     {
         //Given
         var id = _fixture.Create<int>();
 
-        //When
-        var result = (NotFoundObjectResult)await _subject.Delete(id);
+        var exception = _fixture.Create<NotFoundException>();
+        _autoMocker.GetMock<IFoodValidator>()
+            .Setup(x => x.ThrowIfFoodDoesNotExist(id))
+            .Throws(exception);
 
-        //Then
-        result.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-        result.Value.Should().Be($"{nameof(FoodController)}:{nameof(_subject.Delete)} failed. Food with id {id} not found.");
+        //When Then
+        var act = () => _subject.Delete(id);
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage(exception.Message);
+
         _autoMocker.GetMock<IFoodStore>()
             .Verify(x => x.Delete(id), Times.Never);
     }

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Shelf.Life.API.Validators;
+using Shelf.Life.API.Validators.Models;
+using Shelf.Life.Domain.Models;
 using Shelf.Life.Domain.Models.Requests;
 using Shelf.Life.Domain.Stores;
-using System.Text.Json;
 
 namespace Shelf.Life.API.Controllers;
 
@@ -9,10 +11,12 @@ namespace Shelf.Life.API.Controllers;
 public class FoodController : Controller
 {
     private readonly IFoodStore _foodStore;
+    private readonly IFoodValidator _foodValidator;
 
-    public FoodController(IFoodStore foodStore)
+    public FoodController(IFoodStore foodStore, IFoodValidator foodValidator)
     {
         _foodStore = foodStore;
+        _foodValidator = foodValidator;
     }
 
     [HttpGet]
@@ -25,12 +29,7 @@ public class FoodController : Controller
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOrUpdateFoodRequest request)
     {
-        var matchingFood = _foodStore.FindByName(request.Name);
-        if (matchingFood is not null)
-        {
-            return BadRequest($"{nameof(FoodController)}:{nameof(Create)} failed. Food with same name already exist, " +
-                $"duplicate food: {JsonSerializer.Serialize(matchingFood)}");
-        }
+        _foodValidator.ThrowIfFoodExists(request.Name);
 
         await _foodStore.Insert(request);
         return NoContent();
@@ -49,7 +48,7 @@ public class FoodController : Controller
         var matchingFood = _foodStore.FindById(id);
         if (matchingFood is null)
         {
-            return NotFound();
+            throw new NotFoundException($"{nameof(Food)} with id [{id}] does NOT exist.");
         }
 
         return Ok(matchingFood);
@@ -58,11 +57,7 @@ public class FoodController : Controller
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateOrUpdateFoodRequest request)
     {
-        var matchingFood = _foodStore.FindById(id);
-        if (matchingFood is null)
-        {
-            return NotFound($"{nameof(FoodController)}:{nameof(Update)} failed. Food with id {id} not found.");
-        }
+        _foodValidator.ThrowIfFoodDoesNotExist(id);
 
         await _foodStore.Update(id, request);
         return NoContent();
@@ -71,11 +66,7 @@ public class FoodController : Controller
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var matchingFood = _foodStore.FindById(id);
-        if (matchingFood is null)
-        {
-            return NotFound($"{nameof(FoodController)}:{nameof(Delete)} failed. Food with id {id} not found.");
-        }
+        _foodValidator.ThrowIfFoodDoesNotExist(id);
 
         await _foodStore.Delete(id);
         return NoContent();

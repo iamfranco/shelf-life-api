@@ -1,5 +1,5 @@
 ﻿using Shelf.Life.API.Models;
-using System.Net.Mime;
+using Shelf.Life.API.Validators.Models;
 
 namespace Shelf.Life.API.Middlewares;
 
@@ -20,15 +20,23 @@ public class ExceptionHandlingMiddleware
 
             await _next(context);
         }
+        catch (NotFoundException exception)
+        {
+            await HandleExceptionAsync(context, exception, StatusCodes.Status404NotFound);
+        }
+        catch (BadRequestException exception)
+        {
+            await HandleExceptionAsync(context, exception, StatusCodes.Status400BadRequest);
+        }
         catch (Exception exception)
         {
-            await HandleExceptionAsync(context, exception);
+            await HandleExceptionAsync(context, exception, StatusCodes.Status500InternalServerError);
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception, int statusCode)
     {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.StatusCode = statusCode;
 
         var body = await ReadStreamAsync(context.Request.Body);
 
